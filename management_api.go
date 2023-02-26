@@ -15,6 +15,7 @@
 package casbin
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -79,7 +80,7 @@ func (e *Enforcer) GetNamedPolicy(ptype string) [][]string {
 }
 
 // GetFilteredNamedPolicy gets all the authorization rules in the named policy, field filters can be specified.
-func (e *Enforcer) GetFilteredNamedPolicy(ptype string, fieldIndex int, fieldValues ...string) [][]string {
+func (e *Enforcer) GetFilteredNamedPolicy(_ context.Context, ptype string, fieldIndex int, fieldValues ...string) [][]string {
 	return e.model.GetFilteredPolicy("p", ptype, fieldIndex, fieldValues...)
 }
 
@@ -175,7 +176,7 @@ func (e *Enforcer) GetFilteredNamedPolicyWithMatcher(ptype string, matcher strin
 }
 
 // HasPolicy determines whether an authorization rule exists.
-func (e *Enforcer) HasPolicy(params ...interface{}) bool {
+func (e *Enforcer) HasPolicy(_ context.Context, params ...interface{}) bool {
 	return e.HasNamedPolicy("p", params...)
 }
 
@@ -203,8 +204,8 @@ func (e *Enforcer) AddPolicy(params ...interface{}) (bool, error) {
 // AddPolicies adds authorization rules to the current policy.
 // If the rule already exists, the function returns false for the corresponding rule and the rule will not be added.
 // Otherwise the function returns true for the corresponding rule by adding the new rule.
-func (e *Enforcer) AddPolicies(rules [][]string) (bool, error) {
-	return e.AddNamedPolicies("p", rules)
+func (e *Enforcer) AddPolicies(ctx context.Context, rules [][]string) (bool, error) {
+	return e.AddNamedPolicies(ctx, "p", rules)
 }
 
 // AddNamedPolicy adds an authorization rule to the current named policy.
@@ -226,7 +227,7 @@ func (e *Enforcer) AddNamedPolicy(ptype string, params ...interface{}) (bool, er
 // AddNamedPolicies adds authorization rules to the current named policy.
 // If the rule already exists, the function returns false for the corresponding rule and the rule will not be added.
 // Otherwise the function returns true for the corresponding by adding the new rule.
-func (e *Enforcer) AddNamedPolicies(ptype string, rules [][]string) (bool, error) {
+func (e *Enforcer) AddNamedPolicies(_ context.Context, ptype string, rules [][]string) (bool, error) {
 	return e.addPolicies("p", ptype, rules)
 }
 
@@ -267,7 +268,7 @@ func (e *Enforcer) RemovePolicies(rules [][]string) (bool, error) {
 }
 
 // RemoveFilteredPolicy removes an authorization rule from the current policy, field filters can be specified.
-func (e *Enforcer) RemoveFilteredPolicy(fieldIndex int, fieldValues ...string) (bool, error) {
+func (e *Enforcer) RemoveFilteredPolicy(ctx context.Context, fieldIndex int, fieldValues ...string) (bool, error) {
 	return e.RemoveFilteredNamedPolicy("p", fieldIndex, fieldValues...)
 }
 

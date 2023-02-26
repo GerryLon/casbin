@@ -116,10 +116,10 @@ func (e *SyncedEnforcer) DeletePermissionsForUser(user string) (bool, error) {
 }
 
 // GetPermissionsForUser gets permissions for a user or role.
-func (e *SyncedEnforcer) GetPermissionsForUser(user string, domain ...string) [][]string {
+func (e *SyncedEnforcer) GetPermissionsForUser(user string, domain ...string) ([][]string, error) {
 	e.m.RLock()
 	defer e.m.RUnlock()
-	return e.Enforcer.GetPermissionsForUser(user, domain...)
+	return e.Enforcer.GetPermissionsForUser(user, domain...), nil
 }
 
 // GetNamedPermissionsForUser gets permissions for a user or role by named policy.
@@ -130,10 +130,10 @@ func (e *SyncedEnforcer) GetNamedPermissionsForUser(ptype string, user string, d
 }
 
 // HasPermissionForUser determines whether a user has a permission.
-func (e *SyncedEnforcer) HasPermissionForUser(user string, permission ...string) bool {
+func (e *SyncedEnforcer) HasPermissionForUser(user string, permission ...string) (bool, error) {
 	e.m.RLock()
 	defer e.m.RUnlock()
-	return e.Enforcer.HasPermissionForUser(user, permission...)
+	return e.Enforcer.HasPermissionForUser(user, permission...), nil
 }
 
 // GetImplicitRolesForUser gets implicit roles that a user has.

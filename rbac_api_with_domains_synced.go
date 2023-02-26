@@ -15,10 +15,10 @@
 package casbin
 
 // GetUsersForRoleInDomain gets the users that has a role inside a domain. Add by Gordon
-func (e *SyncedEnforcer) GetUsersForRoleInDomain(name string, domain string) []string {
+func (e *SyncedEnforcer) GetUsersForRoleInDomain(name string, domain string) ([]string, error) {
 	e.m.RLock()
 	defer e.m.RUnlock()
-	return e.Enforcer.GetUsersForRoleInDomain(name, domain)
+	return e.Enforcer.GetUsersForRoleInDomain(name, domain), nil
 }
 
 // GetRolesForUserInDomain gets the roles that a user has inside a domain.

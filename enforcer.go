@@ -15,6 +15,7 @@
 package casbin
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"runtime/debug"
@@ -33,6 +34,7 @@ import (
 )
 
 // Enforcer is the main interface for authorization enforcement and policy management.
+// IEnforcer的内存实现
 type Enforcer struct {
 	modelPath string
 	model     model.Model
@@ -66,13 +68,12 @@ type EnforceContext struct {
 //
 // File:
 //
-// 	e := casbin.NewEnforcer("path/to/basic_model.conf", "path/to/basic_policy.csv")
+//	e := casbin.NewEnforcer("path/to/basic_model.conf", "path/to/basic_policy.csv")
 //
 // MySQL DB:
 //
-// 	a := mysqladapter.NewDBAdapter("mysql", "mysql_username:mysql_password@tcp(127.0.0.1:3306)/")
-// 	e := casbin.NewEnforcer("path/to/basic_model.conf", a)
-//
+//	a := mysqladapter.NewDBAdapter("mysql", "mysql_username:mysql_password@tcp(127.0.0.1:3306)/")
+//	e := casbin.NewEnforcer("path/to/basic_model.conf", a)
 func NewEnforcer(params ...interface{}) (*Enforcer, error) {
 	e := &Enforcer{logger: &log.DefaultLogger{}}
 
@@ -290,16 +291,17 @@ func (e *Enforcer) SetEffector(eft effector.Effector) {
 }
 
 // ClearPolicy clears all policy.
-func (e *Enforcer) ClearPolicy() {
+func (e *Enforcer) ClearPolicy(ctx context.Context) error {
 	if e.dispatcher != nil && e.autoNotifyDispatcher {
-		_ = e.dispatcher.ClearPolicy()
-		return
+		err := e.dispatcher.ClearPolicy()
+		return err
 	}
 	e.model.ClearPolicy()
+	return nil
 }
 
 // LoadPolicy reloads the policy from file/database.
-func (e *Enforcer) LoadPolicy() error {
+func (e *Enforcer) LoadPolicy(ctx context.Context) error {
 	needToRebuild := false
 	newModel := e.model.Copy()
 	newModel.ClearPolicy()
@@ -313,7 +315,7 @@ func (e *Enforcer) LoadPolicy() error {
 		}
 	}()
 
-	if err = e.adapter.LoadPolicy(newModel); err != nil && err.Error() != "invalid file path, file path cannot be empty" {
+	if err = e.adapter.LoadPolicy(ctx, newModel); err != nil && err.Error() != "invalid file path, file path cannot be empty" {
 		return err
 	}
 
@@ -342,7 +344,7 @@ func (e *Enforcer) LoadPolicy() error {
 	return nil
 }
 
-func (e *Enforcer) loadFilteredPolicy(filter interface{}) error {
+func (e *Enforcer) loadFilteredPolicy(ctx context.Context, filter interface{}) error {
 	var filteredAdapter persist.FilteredAdapter
 
 	// Attempt to cast the Adapter as a FilteredAdapter
@@ -376,15 +378,15 @@ func (e *Enforcer) loadFilteredPolicy(filter interface{}) error {
 }
 
 // LoadFilteredPolicy reloads a filtered policy from file/database.
-func (e *Enforcer) LoadFilteredPolicy(filter interface{}) error {
+func (e *Enforcer) LoadFilteredPolicy(ctx context.Context, filter interface{}) error {
 	e.model.ClearPolicy()
 
-	return e.loadFilteredPolicy(filter)
+	return e.loadFilteredPolicy(ctx, filter)
 }
 
 // LoadIncrementalFilteredPolicy append a filtered policy from file/database.
-func (e *Enforcer) LoadIncrementalFilteredPolicy(filter interface{}) error {
-	return e.loadFilteredPolicy(filter)
+func (e *Enforcer) LoadIncrementalFilteredPolicy(ctx context.Context, filter interface{}) error {
+	return e.loadFilteredPolicy(ctx, filter)
 }
 
 // IsFiltered returns true if the loaded policy has been filtered.
@@ -397,11 +399,11 @@ func (e *Enforcer) IsFiltered() bool {
 }
 
 // SavePolicy saves the current policy (usually after changed with Casbin API) back to file/database.
-func (e *Enforcer) SavePolicy() error {
+func (e *Enforcer) SavePolicy(ctx context.Context) error {
 	if e.IsFiltered() {
 		return errors.New("cannot save a filtered policy")
 	}
-	if err := e.adapter.SavePolicy(e.model); err != nil {
+	if err := e.adapter.SavePolicy(ctx, e.model); err != nil {
 		return err
 	}
 	if e.watcher != nil {
@@ -462,7 +464,7 @@ func (e *Enforcer) EnableAutoBuildRoleLinks(autoBuildRoleLinks bool) {
 }
 
 // BuildRoleLinks manually rebuild the role inheritance relations.
-func (e *Enforcer) BuildRoleLinks() error {
+func (e *Enforcer) BuildRoleLinks(ctx context.Context) error {
 	for _, rm := range e.rmMap {
 		err := rm.Clear()
 		if err != nil {
@@ -494,7 +496,7 @@ func (e *Enforcer) invalidateMatcherMap() {
 }
 
 // enforce use a custom matcher to decides whether a "subject" can access a "object" with the operation "action", input parameters are usually: (matcher, sub, obj, act), use model matcher by default when matcher is "".
-func (e *Enforcer) enforce(matcher string, explains *[]string, rvals ...interface{}) (ok bool, err error) {
+func (e *Enforcer) enforce(ctx context.Context, matcher string, explains *[]string, rvals ...interface{}) (ok bool, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("panic: %v\n%s", r, debug.Stack())
@@ -714,34 +716,34 @@ func (e *Enforcer) getAndStoreMatcherExpression(hasEval bool, expString string, 
 }
 
 // Enforce decides whether a "subject" can access a "object" with the operation "action", input parameters are usually: (sub, obj, act).
-func (e *Enforcer) Enforce(rvals ...interface{}) (bool, error) {
-	return e.enforce("", nil, rvals...)
+func (e *Enforcer) Enforce(ctx context.Context, rvals ...interface{}) (bool, error) {
+	return e.enforce(ctx, "", nil, rvals...)
 }
 
 // EnforceWithMatcher use a custom matcher to decides whether a "subject" can access a "object" with the operation "action", input parameters are usually: (matcher, sub, obj, act), use model matcher by default when matcher is "".
-func (e *Enforcer) EnforceWithMatcher(matcher string, rvals ...interface{}) (bool, error) {
-	return e.enforce(matcher, nil, rvals...)
+func (e *Enforcer) EnforceWithMatcher(ctx context.Context, matcher string, rvals ...interface{}) (bool, error) {
+	return e.enforce(ctx, matcher, nil, rvals...)
 }
 
 // EnforceEx explain enforcement by informing matched rules
-func (e *Enforcer) EnforceEx(rvals ...interface{}) (bool, []string, error) {
+func (e *Enforcer) EnforceEx(ctx context.Context, rvals ...interface{}) (bool, []string, error) {
 	explain := []string{}
-	result, err := e.enforce("", &explain, rvals...)
+	result, err := e.enforce(ctx, "", &explain, rvals...)
 	return result, explain, err
 }
 
 // EnforceExWithMatcher use a custom matcher and explain enforcement by informing matched rules
-func (e *Enforcer) EnforceExWithMatcher(matcher string, rvals ...interface{}) (bool, []string, error) {
+func (e *Enforcer) EnforceExWithMatcher(ctx context.Context, matcher string, rvals ...interface{}) (bool, []string, error) {
 	explain := []string{}
-	result, err := e.enforce(matcher, &explain, rvals...)
+	result, err := e.enforce(ctx, matcher, &explain, rvals...)
 	return result, explain, err
 }
 
 // BatchEnforce enforce in batches
-func (e *Enforcer) BatchEnforce(requests [][]interface{}) ([]bool, error) {
+func (e *Enforcer) BatchEnforce(ctx context.Context, requests [][]interface{}) ([]bool, error) {
 	var results []bool
 	for _, request := range requests {
-		result, err := e.enforce("", nil, request...)
+		result, err := e.enforce(ctx, "", nil, request...)
 		if err != nil {
 			return results, err
 		}
@@ -751,10 +753,10 @@ func (e *Enforcer) BatchEnforce(requests [][]interface{}) ([]bool, error) {
 }
 
 // BatchEnforceWithMatcher enforce with matcher in batches
-func (e *Enforcer) BatchEnforceWithMatcher(matcher string, requests [][]interface{}) ([]bool, error) {
+func (e *Enforcer) BatchEnforceWithMatcher(ctx context.Context, matcher string, requests [][]interface{}) ([]bool, error) {
 	var results []bool
 	for _, request := range requests {
-		result, err := e.enforce(matcher, nil, request...)
+		result, err := e.enforce(ctx, matcher, nil, request...)
 		if err != nil {
 			return results, err
 		}

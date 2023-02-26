@@ -109,10 +109,10 @@ func (e *SyncedEnforcer) LoadModel() error {
 }
 
 // ClearPolicy clears all policy.
-func (e *SyncedEnforcer) ClearPolicy() {
+func (e *SyncedEnforcer) ClearPolicy() error {
 	e.m.Lock()
 	defer e.m.Unlock()
-	e.Enforcer.ClearPolicy()
+	return e.Enforcer.ClearPolicy()
 }
 
 // LoadPolicy reloads the policy from file/database.

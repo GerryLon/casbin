@@ -15,6 +15,8 @@
 package casbin
 
 import (
+	"context"
+
 	"github.com/Knetic/govaluate"
 	"github.com/casbin/casbin/v2/effector"
 	"github.com/casbin/casbin/v2/model"
@@ -37,114 +39,114 @@ type IEnforcer interface {
 	SetModel(m model.Model)
 	GetAdapter() persist.Adapter
 	SetAdapter(adapter persist.Adapter)
-	SetWatcher(watcher persist.Watcher) error
+	SetWatcher(ctx context.Context, watcher persist.Watcher) error
 	GetRoleManager() rbac.RoleManager
 	SetRoleManager(rm rbac.RoleManager)
 	SetEffector(eft effector.Effector)
-	ClearPolicy()
-	LoadPolicy() error
-	LoadFilteredPolicy(filter interface{}) error
-	LoadIncrementalFilteredPolicy(filter interface{}) error
+	ClearPolicy(ctx context.Context) error
+	LoadPolicy(ctx context.Context) error
+	LoadFilteredPolicy(ctx context.Context, filter interface{}) error
+	LoadIncrementalFilteredPolicy(ctx context.Context, filter interface{}) error
 	IsFiltered() bool
-	SavePolicy() error
+	SavePolicy(ctx context.Context) error
 	EnableEnforce(enable bool)
 	EnableLog(enable bool)
 	EnableAutoNotifyWatcher(enable bool)
 	EnableAutoSave(autoSave bool)
 	EnableAutoBuildRoleLinks(autoBuildRoleLinks bool)
-	BuildRoleLinks() error
-	Enforce(rvals ...interface{}) (bool, error)
-	EnforceWithMatcher(matcher string, rvals ...interface{}) (bool, error)
-	EnforceEx(rvals ...interface{}) (bool, []string, error)
-	EnforceExWithMatcher(matcher string, rvals ...interface{}) (bool, []string, error)
-	BatchEnforce(requests [][]interface{}) ([]bool, error)
-	BatchEnforceWithMatcher(matcher string, requests [][]interface{}) ([]bool, error)
+	BuildRoleLinks(ctx context.Context) error
+	Enforce(ctx context.Context, rvals ...interface{}) (bool, error)
+	EnforceWithMatcher(ctx context.Context, matcher string, rvals ...interface{}) (bool, error)
+	EnforceEx(ctx context.Context, rvals ...interface{}) (bool, []string, error)
+	EnforceExWithMatcher(ctx context.Context, matcher string, rvals ...interface{}) (bool, []string, error)
+	BatchEnforce(ctx context.Context, requests [][]interface{}) ([]bool, error)
+	BatchEnforceWithMatcher(ctx context.Context, matcher string, requests [][]interface{}) ([]bool, error)
 
 	/* RBAC API */
-	GetRolesForUser(name string, domain ...string) ([]string, error)
-	GetUsersForRole(name string, domain ...string) ([]string, error)
-	HasRoleForUser(name string, role string, domain ...string) (bool, error)
-	AddRoleForUser(user string, role string, domain ...string) (bool, error)
-	AddPermissionForUser(user string, permission ...string) (bool, error)
-	AddPermissionsForUser(user string, permissions ...[]string) (bool, error)
-	DeletePermissionForUser(user string, permission ...string) (bool, error)
-	DeletePermissionsForUser(user string) (bool, error)
-	GetPermissionsForUser(user string, domain ...string) [][]string
-	HasPermissionForUser(user string, permission ...string) bool
-	GetImplicitRolesForUser(name string, domain ...string) ([]string, error)
-	GetImplicitPermissionsForUser(user string, domain ...string) ([][]string, error)
-	GetImplicitUsersForPermission(permission ...string) ([]string, error)
-	DeleteRoleForUser(user string, role string, domain ...string) (bool, error)
-	DeleteRolesForUser(user string, domain ...string) (bool, error)
-	DeleteUser(user string) (bool, error)
-	DeleteRole(role string) (bool, error)
-	DeletePermission(permission ...string) (bool, error)
+	GetRolesForUser(ctx context.Context, name string, domain ...string) ([]string, error)
+	GetUsersForRole(ctx context.Context, name string, domain ...string) ([]string, error)
+	HasRoleForUser(ctx context.Context, name string, role string, domain ...string) (bool, error)
+	AddRoleForUser(ctx context.Context, user string, role string, domain ...string) (bool, error)
+	AddPermissionForUser(ctx context.Context, user string, permission ...string) (bool, error)
+	AddPermissionsForUser(ctx context.Context, user string, permissions ...[]string) (bool, error)
+	DeletePermissionForUser(ctx context.Context, user string, permission ...string) (bool, error)
+	DeletePermissionsForUser(ctx context.Context, user string) (bool, error)
+	GetPermissionsForUser(ctx context.Context, user string, domain ...string) ([][]string, error)
+	HasPermissionForUser(ctx context.Context, user string, permission ...string) (bool, error)
+	GetImplicitRolesForUser(ctx context.Context, name string, domain ...string) ([]string, error)
+	GetImplicitPermissionsForUser(ctx context.Context, user string, domain ...string) ([][]string, error)
+	GetImplicitUsersForPermission(ctx context.Context, permission ...string) ([]string, error)
+	DeleteRoleForUser(ctx context.Context, user string, role string, domain ...string) (bool, error)
+	DeleteRolesForUser(ctx context.Context, user string, domain ...string) (bool, error)
+	DeleteUser(ctx context.Context, user string) (bool, error)
+	DeleteRole(ctx context.Context, role string) (bool, error)
+	DeletePermission(ctx context.Context, permission ...string) (bool, error)
 
 	/* RBAC API with domains*/
-	GetUsersForRoleInDomain(name string, domain string) []string
-	GetRolesForUserInDomain(name string, domain string) []string
-	GetPermissionsForUserInDomain(user string, domain string) [][]string
-	AddRoleForUserInDomain(user string, role string, domain string) (bool, error)
-	DeleteRoleForUserInDomain(user string, role string, domain string) (bool, error)
+	GetUsersForRoleInDomain(ctx context.Context, name string, domain string) ([]string, error)
+	GetRolesForUserInDomain(ctx context.Context, name string, domain string) ([]string, error)
+	GetPermissionsForUserInDomain(ctx context.Context, user string, domain string) [][]string
+	AddRoleForUserInDomain(ctx context.Context, user string, role string, domain string) (bool, error)
+	DeleteRoleForUserInDomain(ctx context.Context, user string, role string, domain string) (bool, error)
 
 	/* Management API */
-	GetAllSubjects() []string
-	GetAllNamedSubjects(ptype string) []string
-	GetAllObjects() []string
-	GetAllNamedObjects(ptype string) []string
-	GetAllActions() []string
-	GetAllNamedActions(ptype string) []string
-	GetAllRoles() []string
-	GetAllNamedRoles(ptype string) []string
-	GetPolicy() [][]string
-	GetFilteredPolicy(fieldIndex int, fieldValues ...string) [][]string
-	GetNamedPolicy(ptype string) [][]string
-	GetFilteredNamedPolicy(ptype string, fieldIndex int, fieldValues ...string) [][]string
-	GetGroupingPolicy() [][]string
-	GetFilteredGroupingPolicy(fieldIndex int, fieldValues ...string) [][]string
-	GetNamedGroupingPolicy(ptype string) [][]string
-	GetFilteredNamedGroupingPolicy(ptype string, fieldIndex int, fieldValues ...string) [][]string
-	HasPolicy(params ...interface{}) bool
-	HasNamedPolicy(ptype string, params ...interface{}) bool
-	AddPolicy(params ...interface{}) (bool, error)
-	AddPolicies(rules [][]string) (bool, error)
-	AddNamedPolicy(ptype string, params ...interface{}) (bool, error)
-	AddNamedPolicies(ptype string, rules [][]string) (bool, error)
-	RemovePolicy(params ...interface{}) (bool, error)
-	RemovePolicies(rules [][]string) (bool, error)
-	RemoveFilteredPolicy(fieldIndex int, fieldValues ...string) (bool, error)
-	RemoveNamedPolicy(ptype string, params ...interface{}) (bool, error)
-	RemoveNamedPolicies(ptype string, rules [][]string) (bool, error)
-	RemoveFilteredNamedPolicy(ptype string, fieldIndex int, fieldValues ...string) (bool, error)
-	HasGroupingPolicy(params ...interface{}) bool
-	HasNamedGroupingPolicy(ptype string, params ...interface{}) bool
-	AddGroupingPolicy(params ...interface{}) (bool, error)
-	AddGroupingPolicies(rules [][]string) (bool, error)
-	AddNamedGroupingPolicy(ptype string, params ...interface{}) (bool, error)
-	AddNamedGroupingPolicies(ptype string, rules [][]string) (bool, error)
-	RemoveGroupingPolicy(params ...interface{}) (bool, error)
-	RemoveGroupingPolicies(rules [][]string) (bool, error)
-	RemoveFilteredGroupingPolicy(fieldIndex int, fieldValues ...string) (bool, error)
-	RemoveNamedGroupingPolicy(ptype string, params ...interface{}) (bool, error)
+	GetAllSubjects(ctx context.Context) ([]string, error)
+	GetAllNamedSubjects(ctx context.Context, ptype string) ([]string, error)
+	GetAllObjects(ctx context.Context) []string
+	GetAllNamedObjects(ctx context.Context, ptype string) ([]string, error)
+	GetAllActions(ctx context.Context) ([]string, error)
+	GetAllNamedActions(ctx context.Context, ptype string) ([]string, error)
+	GetAllRoles(ctx context.Context) ([]string, error)
+	GetAllNamedRoles(ctx context.Context, ptype string) ([]string, error)
+	GetPolicy(ctx context.Context) ([][]string, error)
+	GetFilteredPolicy(ctx context.Context, fieldIndex int, fieldValues ...string) ([][]string, error)
+	GetNamedPolicy(ctx context.Context, ptype string) ([][]string, error)
+	GetFilteredNamedPolicy(ctx context.Context, ptype string, fieldIndex int, fieldValues ...string) ([][]string, error)
+	GetGroupingPolicy(ctx context.Context) ([][]string, error)
+	GetFilteredGroupingPolicy(ctx context.Context, fieldIndex int, fieldValues ...string) ([][]string, error)
+	GetNamedGroupingPolicy(ctx context.Context, ptype string) ([][]string, error)
+	GetFilteredNamedGroupingPolicy(ctx context.Context, ptype string, fieldIndex int, fieldValues ...string) ([][]string, error)
+	HasPolicy(ctx context.Context, params ...interface{}) (bool, error)
+	HasNamedPolicy(ctx context.Context, ptype string, params ...interface{}) (bool, error)
+	AddPolicy(ctx context.Context, params ...interface{}) (bool, error)
+	AddPolicies(ctx context.Context, rules [][]string) (bool, error)
+	AddNamedPolicy(ctx context.Context, ptype string, params ...interface{}) (bool, error)
+	AddNamedPolicies(ctx context.Context, ptype string, rules [][]string) (bool, error)
+	RemovePolicy(ctx context.Context, params ...interface{}) (bool, error)
+	RemovePolicies(ctx context.Context, rules [][]string) (bool, error)
+	RemoveFilteredPolicy(ctx context.Context, fieldIndex int, fieldValues ...string) (bool, error)
+	RemoveNamedPolicy(ctx context.Context, ptype string, params ...interface{}) (bool, error)
+	RemoveNamedPolicies(ctx context.Context, ptype string, rules [][]string) (bool, error)
+	RemoveFilteredNamedPolicy(ctx context.Context, ptype string, fieldIndex int, fieldValues ...string) (bool, error)
+	HasGroupingPolicy(ctx context.Context, params ...interface{}) (bool, error)
+	HasNamedGroupingPolicy(ctx context.Context, ptype string, params ...interface{}) (bool, error)
+	AddGroupingPolicy(ctx context.Context, params ...interface{}) (bool, error)
+	AddGroupingPolicies(ctx context.Context, rules [][]string) (bool, error)
+	AddNamedGroupingPolicy(ctx context.Context, ptype string, params ...interface{}) (bool, error)
+	AddNamedGroupingPolicies(ctx context.Context, ptype string, rules [][]string) (bool, error)
+	RemoveGroupingPolicy(ctx context.Context, params ...interface{}) (bool, error)
+	RemoveGroupingPolicies(ctx context.Context, rules [][]string) (bool, error)
+	RemoveFilteredGroupingPolicy(ctx context.Context, fieldIndex int, fieldValues ...string) (bool, error)
+	RemoveNamedGroupingPolicy(ctx context.Context, ptype string, params ...interface{}) (bool, error)
 	RemoveNamedGroupingPolicies(ptype string, rules [][]string) (bool, error)
-	RemoveFilteredNamedGroupingPolicy(ptype string, fieldIndex int, fieldValues ...string) (bool, error)
+	RemoveFilteredNamedGroupingPolicy(ctx context.Context, ptype string, fieldIndex int, fieldValues ...string) (bool, error)
 	AddFunction(name string, function govaluate.ExpressionFunction)
 
-	UpdatePolicy(oldPolicy []string, newPolicy []string) (bool, error)
-	UpdatePolicies(oldPolicies [][]string, newPolicies [][]string) (bool, error)
-	UpdateFilteredPolicies(newPolicies [][]string, fieldIndex int, fieldValues ...string) (bool, error)
+	UpdatePolicy(ctx context.Context, oldPolicy []string, newPolicy []string) (bool, error)
+	UpdatePolicies(ctx context.Context, oldPolicies [][]string, newPolicies [][]string) (bool, error)
+	UpdateFilteredPolicies(ctx context.Context, newPolicies [][]string, fieldIndex int, fieldValues ...string) (bool, error)
 
-	UpdateGroupingPolicy(oldRule []string, newRule []string) (bool, error)
-	UpdateGroupingPolicies(oldRules [][]string, newRules [][]string) (bool, error)
+	UpdateGroupingPolicy(ctx context.Context, oldRule []string, newRule []string) (bool, error)
+	UpdateGroupingPolicies(ctx context.Context, oldRules [][]string, newRules [][]string) (bool, error)
 
 	/* Management API with autoNotifyWatcher disabled */
-	SelfAddPolicy(sec string, ptype string, rule []string) (bool, error)
-	SelfAddPolicies(sec string, ptype string, rules [][]string) (bool, error)
-	SelfRemovePolicy(sec string, ptype string, rule []string) (bool, error)
-	SelfRemovePolicies(sec string, ptype string, rules [][]string) (bool, error)
-	SelfRemoveFilteredPolicy(sec string, ptype string, fieldIndex int, fieldValues ...string) (bool, error)
-	SelfUpdatePolicy(sec string, ptype string, oldRule, newRule []string) (bool, error)
-	SelfUpdatePolicies(sec string, ptype string, oldRules, newRules [][]string) (bool, error)
+	SelfAddPolicy(ctx context.Context, sec string, ptype string, rule []string) (bool, error)
+	SelfAddPolicies(ctx context.Context, sec string, ptype string, rules [][]string) (bool, error)
+	SelfRemovePolicy(ctx context.Context, sec string, ptype string, rule []string) (bool, error)
+	SelfRemovePolicies(ctx context.Context, sec string, ptype string, rules [][]string) (bool, error)
+	SelfRemoveFilteredPolicy(ctx context.Context, sec string, ptype string, fieldIndex int, fieldValues ...string) (bool, error)
+	SelfUpdatePolicy(ctx context.Context, sec string, ptype string, oldRule, newRule []string) (bool, error)
+	SelfUpdatePolicies(ctx context.Context, sec string, ptype string, oldRules, newRules [][]string) (bool, error)
 }
 
 var _ IDistributedEnforcer = &DistributedEnforcer{}

@@ -28,27 +28,27 @@ type RoleManager interface {
 	Clear() error
 	// AddLink adds the inheritance link between two roles. role: name1 and role: name2.
 	// domain is a prefix to the roles (can be used for other purposes).
-	AddLink(name1 string, name2 string, domain ...string) error
+	AddLink(ctx context.Context, name1 string, name2 string, domain ...string) error
 	// Deprecated: BuildRelationship is no longer required
-	BuildRelationship(name1 string, name2 string, domain ...string) error
+	BuildRelationship(ctx context.Context, name1 string, name2 string, domain ...string) error
 	// DeleteLink deletes the inheritance link between two roles. role: name1 and role: name2.
 	// domain is a prefix to the roles (can be used for other purposes).
-	DeleteLink(name1 string, name2 string, domain ...string) error
+	DeleteLink(ctx context.Context, name1 string, name2 string, domain ...string) error
 	// HasLink determines whether a link exists between two roles. role: name1 inherits role: name2.
 	// domain is a prefix to the roles (can be used for other purposes).
-	HasLink(name1 string, name2 string, domain ...string) (bool, error)
+	HasLink(ctx context.Context, name1 string, name2 string, domain ...string) (bool, error)
 	// GetRoles gets the roles that a user inherits.
 	// domain is a prefix to the roles (can be used for other purposes).
-	GetRoles(name string, domain ...string) ([]string, error)
+	GetRoles(ctx context.Context, name string, domain ...string) ([]string, error)
 	// GetUsers gets the users that inherits a role.
 	// domain is a prefix to the users (can be used for other purposes).
-	GetUsers(name string, domain ...string) ([]string, error)
+	GetUsers(ctx context.Context, name string, domain ...string) ([]string, error)
 	// GetDomains gets domains that a user has
-	GetDomains(name string) ([]string, error)
+	GetDomains(ctx context.Context, name string) ([]string, error)
 	// GetAllDomains gets all domains
-	GetAllDomains() ([]string, error)
+	GetAllDomains(ctx context.Context) ([]string, error)
 	// PrintRoles prints all the roles to log.
-	PrintRoles() error
+	PrintRoles(ctx context.Context) error
 	// SetLogger sets role manager's logger.
 	SetLogger(logger log.Logger)
 	// Match matches the domain with the pattern
